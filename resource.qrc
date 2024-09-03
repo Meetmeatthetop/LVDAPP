@@ -1,0 +1,22 @@
+<RCC>
+  <qresource>
+    <file>ICON/drop_down_icon.png</file>
+    <file>ICON/Premium Photo _ Black woman wearing glasses short hair.png</file>
+    <file>ICON/dp_image.png</file>
+    <file>ICON/CLOSE.png</file>
+    <file>ICON/FILE 2.png</file>
+    <file>ICON/FILE.png</file>
+    <file>ICON/Icon_-7.png</file>
+    <file>ICON/MENU CLOSE 2.png</file>
+    <file>ICON/MENU CLOSE.png</file>
+    <file>ICON/HOME (2).png</file>
+    <file>ICON/HOME.png</file>
+    <file>ICON/MAX.png</file>
+    <file>ICON/MENU.png</file>
+    <file>ICON/RESTORE.png</file>
+    <file>ICON/SEACH.png</file>
+    <file>ICON/TOOLS 2.png</file>
+    <file>ICON/TOOLS.png</file>
+    <file>ICON/USER.png</file>
+  </qresource>
+</RCC>
