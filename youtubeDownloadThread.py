@@ -6,8 +6,9 @@ import os
 import time
 
 class DownloadThread(QThread):
-    status = Signal(str)
-    progress = Signal(int)
+    status = Signal(str)  # Signal to update status messages
+    progress = Signal(int)  # Signal to update progress
+    formats_loaded = Signal(list)  # Signal to send available formats to the UI
 
     def __init__(self, url, format_id, filepath):
         super().__init__()
@@ -50,37 +51,57 @@ class DownloadThread(QThread):
             ##self.status.emit(percent_str)
             self.progress.emit(percent_int)
 
-                
-
     def run(self):
         try:
             # Extract video info without downloading to get title and other metadata
             video_info = self.ytdl.extract_info(self.url, download=False)
             video_title = video_info.get('title', 'video')
-            video_filename = f"{video_title}.mp4"
-            audio_filename = f"{video_title}.m4a"
+            video_duration = video_info.get('duration', 0)
+            formats = video_info.get('formats', [])
+            print(f"Video Title: {video_title}")
+            print(f"Video Duration: {video_duration} seconds")
+            print(f"Available Formats: {formats}")
+
+            # Emit available formats to the UI
+            self.formats_loaded.emit(formats)
+
+            # Validate format_id
+            if not any(fmt['format_id'] == self.format_id for fmt in formats):
+                self.status.emit(f"Error: Invalid format ID '{self.format_id}'")
+                return
 
             # Update the format for downloading
-            self.ydl_opts['format'] = f"{self.format_id}+bestaudio"  # Use the user-selected video format and best audio
-            self.ytdl = yt_dlp.YoutubeDL(self.ydl_opts)  # Reinitialize with updated options
+            self.ydl_opts['format'] = f"{self.format_id}+bestaudio"
+            self.ytdl = yt_dlp.YoutubeDL(self.ydl_opts)
 
-            # Download the video and audio
+            # Download the video
             self.ytdl.download([self.url])
 
             # Merge video and audio using FFmpeg
-            subprocess.run(['ffmpeg', '-i', video_filename, '-i', audio_filename, '-c', 'copy', f"{video_title}_merged.mp4"], check=True)
+            video_filename = f"{video_title}.mp4"
+            audio_filename = f"{video_title}.m4a"
+            merged_filename = f"{video_title}_merged.mp4"
 
-            # Emit success message
-            self.status.emit('Download complete!')
+            if os.path.exists(merged_filename):
+                os.remove(merged_filename)  # Remove existing merged file to avoid conflicts
+
+            ffmpeg_command = [
+                'ffmpeg', '-y', '-i', video_filename, '-i', audio_filename,
+                '-c', 'copy', merged_filename
+            ]
+            try:
+                subprocess.run(ffmpeg_command, check=True)
+                self.status.emit('Download complete!')
+            except FileNotFoundError:
+                self.status.emit('Error: FFmpeg not found. Please install FFmpeg and add it to your PATH.')
+            except subprocess.CalledProcessError as e:
+                self.status.emit(f'FFmpeg error: {str(e)}')
+
         except yt_dlp.DownloadError as e:
-            # Emit error message for yt-dlp download issues
             self.status.emit(f'Error: {str(e)}')
-        except subprocess.CalledProcessError as e:
-            # Emit error message for FFmpeg issues
-            self.status.emit(f'FFmpeg error: {str(e)}')
+        except Exception as e:
+            self.status.emit(f'Unexpected error: {str(e)}')
 
-
-class stop_Download():
     def stop(self):
         self._is_stopped = True
         self.ytdl.abort_download()
